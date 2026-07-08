@@ -55,6 +55,8 @@ visualstudio-extension
     <a href="https://en.wikipedia.org/wiki/Spanish_Empire"><img src="https://img.shields.io/badge/Made_in-Spain_%F0%9F%87%AA%F0%9F%87%B8-AA151B?style=flat" alt="Made in Spain"></a>
 </p>
 
+------------------
+
 ## 👋 Introduction
 
 Did you know that regular use of Visual Studio can easily clutter your system? Because Visual Studio leaves behind its own temporary data, your local temp directory can quickly grow by several gigabytes, piling up hundreds of leftover files over time.
