@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Temp_File_Cleaner_VS2026</RootNamespace>
+    <OptionStrict>On</OptionStrict>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionInfer>Off</OptionInfer>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <DefineConstants>$(DefineConstants),WINDOWS_TESTS=-1</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="xunit.v3.mtp-off" Version="4.0.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Temp File Cleaner VS2026/core/CleanupRules.vb" Link="Production/CleanupRules.vb" />
+    <Compile Include="../Temp File Cleaner VS2026/core/CleanupRunner.vb" Link="Production/CleanupRunner.vb" />
+    <Compile Include="../Temp File Cleaner VS2026/core/TextWriterService.vb" Link="Production/TextWriterService.vb" />
+    <Compile Include="../Temp File Cleaner VS2026/core/VsInstanceLeaseCoordinator.vb" Link="Production/VsInstanceLeaseCoordinator.vb" />
+  </ItemGroup>
+</Project>

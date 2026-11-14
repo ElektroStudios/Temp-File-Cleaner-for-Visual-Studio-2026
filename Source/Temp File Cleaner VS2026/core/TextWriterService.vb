@@ -1,91 +1,66 @@
-﻿' ***********************************************************************
-' Author   : ElektroStudios
-' Modified : 19-April-2026
-' ***********************************************************************
-
-#Region " Option Statements "
-
 Option Strict On
 Option Explicit On
 Option Infer Off
 
-#End Region
-
-#Region " Imports "
-
-Imports Microsoft.VisualStudio.Shell
-Imports Microsoft.VisualStudio.Shell.Interop
-Imports Microsoft.VisualStudio.Threading
 Imports System
 Imports System.IO
+Imports System.Text
 Imports System.Threading
 Imports System.Threading.Tasks
 
-Imports IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider
-Imports Task = System.Threading.Tasks.Task
+''' <summary>Serializes append operations and exposes write failures to the caller.</summary>
+Public NotInheritable Class TextWriterService
+    Implements ISTextWriterService, ITextWriterService
 
-#End Region
+    ''' <summary>
+    ''' Protects synchronous file writes performed exclusively on worker threads.
+    ''' </summary>
+    Private ReadOnly writeGate As New Object()
 
-#Region " TextWriterService "
-
-''' <summary>
-''' A class that implements both the service and the service interface.
-''' </summary>
-''' 
-''' <remarks>
-''' <see href="https://docs.microsoft.com/en-us/dotnet/api/microsoft.visualstudio.shell.asyncservicecreatorcallback?view=visualstudiosdk-2019"/>
-''' </remarks>
-Public Class TextWriterService : Implements STextWriterService, ITextWriterService
-
-    Private ReadOnly asyncServiceProvider As IAsyncServiceProvider
-
-    Public Sub New(provider As IAsyncServiceProvider)
-        ' constructor should only be used for simple initialization
-        ' any usage of Visual Studio service, expensive background operations should happen in the
-        ' asynchronous InitializeAsync method for best performance
-        Me.asyncServiceProvider = provider
-    End Sub
-
-    Public Async Function InitializeAsync(ByVal cancellationToken As CancellationToken) As Task
-        Await TaskScheduler.Default
-        ' Do background operations that involve IO or other async methods
-
-        Await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken)
-        ' Query Visual Studio services on main thread unless they are documented as free threaded explicitly.
-        ' The reason for this is the final cast to service interface (such as IVsShell) may involve COM operations to add/release references.
-
-        Dim vsShell As IVsShell = TryCast(Me.asyncServiceProvider.GetServiceAsync(GetType(SVsShell)), IVsShell)
-        ' Use Visual Studio services to continue initialization
+    ''' <summary>Initializes the service without accessing unnecessary shell services.</summary>
+    Public Function InitializeAsync(cancellationToken As CancellationToken) As Task
+        cancellationToken.ThrowIfCancellationRequested()
+        Return Task.CompletedTask
     End Function
 
-    Public Async Function WriteLineAsync(path As String, line As String) As Task Implements ITextWriterService.WriteLineAsync
-        Try
-            Using writer As New StreamWriter(path, append:=True)
-                Await writer.WriteLineAsync(line)
-            End Using
-        Catch ex As Exception
-        End Try
-    End Function
+    ''' <summary>
+    ''' Appends a UTF-8 line on a worker thread, serializing access to the file.
+    ''' </summary>
+    ''' <param name="path">The destination file path.</param>
+    ''' <param name="line">The text to append, or Nothing for an empty line.</param>
+    ''' <returns>A task representing the write operation.</returns>
+    ''' <exception cref="ArgumentNullException">
+    ''' <paramref name="path"/> is Nothing.
+    ''' </exception>
+    Public Async Function WriteLineAsync(path As String,
+                                     line As String) As Task _
+    Implements ITextWriterService.WriteLineAsync
 
+        If path Is Nothing Then
+            Throw New ArgumentNullException(NameOf(path))
+        End If
+
+        Await Task.Run(
+        Sub()
+            SyncLock Me.writeGate
+                Using writer As New StreamWriter(
+                    path,
+                    append:=True,
+                    encoding:=New UTF8Encoding(False))
+
+                    writer.WriteLine(If(line, String.Empty))
+                End Using
+            End SyncLock
+        End Sub).ConfigureAwait(False)
+    End Function
 End Class
 
-#Disable Warning IDE1006 ' Naming Styles
-''' <summary>
-''' An empty interface that identifies the service. 
-''' <para></para>
-''' This have no methods defined as it is only used for querying the service.
-''' </summary>
-Public Interface STextWriterService
-#Enable Warning IDE1006 ' Naming Styles
+''' <summary>Identifies the package's text writer service.</summary>
+Public Interface ISTextWriterService
 End Interface
 
-''' <summary>
-''' An interface that describes the service interface. 
-''' <para></para>
-''' This interface defines the methods to be implemented.
-''' </summary>
+''' <summary>Describes asynchronous line output.</summary>
 Public Interface ITextWriterService
+    ''' <summary>Appends a line, propagating filesystem failures.</summary>
     Function WriteLineAsync(path As String, line As String) As Task
 End Interface
-
-#End Region

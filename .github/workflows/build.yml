@@ -1,4 +1,4 @@
-﻿# ------------------------------------------
+# ------------------------------------------
 # CUSTOMIZABLE TEMPLATE REPOSITORY VARIABLES
 # 
 env:
@@ -28,6 +28,9 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
       - name: Cache SonarQube Cloud packages
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
@@ -57,5 +60,5 @@ jobs:
           dotnet nuget locals all --clear
           & "${{ runner.temp }}\scanner\dotnet-sonarscanner" begin /k:"${{ env.SONAR_PROJECT_KEY }}" /o:"${{ env.SONAR_ORGANIZATION }}" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.sourceEncoding=UTF-8 /d:sonar.exclusions="**/*.png,**/*.ico,**/*.jpg,**/*.jpeg,**/*.gif,**/*.webp,**/*.bmp,**/*.tif,**/*.tiff,**/*.rtf,**/*.html,**/*.htm,**/*.resx,**/*.yml,**/*.myapp,**/*.sample,**/*.settings,**/*.conf,**/*.md,**/*.bin,**/*.sln,**/*.slnx,**/*.zip,**/*.rar,**/*.rev,**/*.idx,**/*.nfo,**/*.gitattributes,**/*.gitignore,**/.github/**/*"
           nuget restore "Source\${{ env.SOLUTION_NAME }}.${{ env.SOLUTION_EXT }}"
-          msbuild "Source\${{ env.SOLUTION_NAME }}.${{ env.SOLUTION_EXT }}" -p:Configuration=Release
+          msbuild "Source\${{ env.SOLUTION_NAME }}.${{ env.SOLUTION_EXT }}" /p:Configuration=Release /p:GenerateResourceUsePreserializedResources=false
           & "${{ runner.temp }}\scanner\dotnet-sonarscanner" end /d:sonar.token="$env:SONAR_TOKEN"
